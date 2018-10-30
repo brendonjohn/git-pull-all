@@ -11,8 +11,8 @@ var async = require('async');
  * @param  {String}   file
  * @param  {Function} callback
  */
-function isDirectory(file, callback) {
-  fs.stat(file, function(err, stats) {
+function isDirectory (file, callback) {
+  fs.stat(file, function (err, stats) {
     if (err) {
       var message = [
         'Something went wrong on "' + file + '"',
@@ -31,8 +31,8 @@ function isDirectory(file, callback) {
  * @param  {String}   dir
  * @param  {Function} callback
  */
-function isGitProject(dir, callback) {
-  fs.exists(join(dir, '.git'), function(ret) {
+function isGitProject (dir, callback) {
+  fs.exists(join(dir, '.git'), function (ret) {
     if (!ret) {
       console.log('\033[36m' + basename(dir) + '/\033[39m');
       console.log('Not a git repository');
@@ -47,7 +47,7 @@ function isGitProject(dir, callback) {
  * @param  {String} command
  * @param  {Object} options
  */
-function run(command, options, callback) {
+function run (command, options, callback) {
   options = options || {};
   exec(command, options, callback);
 }
@@ -58,9 +58,9 @@ function run(command, options, callback) {
  * @param  {String}   dir
  * @param  {Function} callback
  */
-function hasRemoteRepo(dir, callback) {
+function hasRemoteRepo (dir, callback) {
   var command = 'git remote show';
-  run(command, { cwd: dir }, function(err, stdout, stderr) {
+  run(command, { cwd: dir }, function (err, stdout, stderr) {
     if (err || stderr) {
       var message = '';
       message += 'Something went wrong on "' + dir + '" ...';
@@ -68,7 +68,8 @@ function hasRemoteRepo(dir, callback) {
       if (err) {
         message += 'Message: ' + err.message;
       } else if (stderr) {
-        message += 'Message: ' + stderr;;
+        message += 'Message: ' + stderr;
+        ;
       }
       console.log(message);
       return callback(false);
@@ -87,9 +88,9 @@ function hasRemoteRepo(dir, callback) {
  * @param  {String}   dir
  * @param  {Function} callback
  */
-function gitPull(dir, callback) {
+function gitPull (dir, callback) {
   var command = 'git pull';
-  run(command, { cwd: dir }, function(err, stdout, stderr) {
+  run(command, { cwd: dir }, function (err, stdout, stderr) {
     if (err) {
       var message = [
         'Something went wrong on "' + dir + '" ...',
@@ -109,12 +110,12 @@ function gitPull(dir, callback) {
   });
 }
 
-function readFiles(dir, callback) {
-  fs.readdir(dir, function(err, children) {
+function readFiles (dir, callback) {
+  fs.readdir(dir, function (err, children) {
     if (err) {
       return callback(err);
     }
-    var files = children.map(function(child) {
+    var files = children.map(function (child) {
       return join(dir, child);
     });
     return callback(null, files);
@@ -126,30 +127,34 @@ function readFiles(dir, callback) {
  *
  * @param  {String} parent
  */
-module.exports = function(parent) {
-  readFiles(parent, function(err, files) {
-    if (err) {
-      return console.log(err.message);
-    }
+module.exports = function (parent) {
+  return new Promise(function (resolve, reject) {
+    readFiles(parent, function (err, files) {
+      if (err) {
+        console.log(err.message);
+        return reject(err)
+      }
 
-    // Returns files
-    async.filter(files, isDirectory, function(dirs) {
+      // Returns files
+      async.filter(files, isDirectory, function (dirs) {
 
-      // Returns git projects
-      async.filter(dirs, isGitProject, function(gitProjects) {
+        // Returns git projects
+        async.filter(dirs, isGitProject, function (gitProjects) {
 
-        // Ignore if project does not have remote tracking repo
-        async.filter(gitProjects, hasRemoteRepo, function(trackingRepos) {
+          // Ignore if project does not have remote tracking repo
+          async.filter(gitProjects, hasRemoteRepo, function (trackingRepos) {
 
-          async.each(trackingRepos, gitPull, function(err) {
-            if (err) {
-              console.log(err.message);
-              return;
-            }
-            console.log('Done!');
+            async.each(trackingRepos, gitPull, function (err) {
+              if (err) {
+                console.log(err.message);
+                return reject(err);
+              }
+              console.log('Done!');
+              resolve()
+            });
           });
         });
       });
     });
-  });
+  })
 };

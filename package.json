@@ -1,5 +1,5 @@
 {
-  "name": "git-pull-all",
+  "name": "@brendonjohn/git-pull-all",
   "version": "0.1.4",
   "description": "Concurrent git pull executor for multiple git repositories.",
   "bin": {
