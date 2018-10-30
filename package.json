@@ -1,6 +1,6 @@
 {
   "name": "@brendonjohn/git-pull-all",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Concurrent git pull executor for multiple git repositories.",
   "bin": {
     "git-pull-all": "cli.js"
